@@ -42,9 +42,9 @@ export default function Footersection() {
 
             <ul className="space-y-2 text-sm">
               <li><a href="#" className="hover:text-yellow-300">หน้าแรก</a></li>
-              <li><a href="#" className="hover:text-yellow-300">เมืองเฉิงตู</a></li>
-              <li><a href="#" className="hover:text-yellow-300">หมีแพนด้า</a></li>
-              <li><a href="#" className="hover:text-yellow-300">นักรบมังกร</a></li>
+              <li><a href="#" className="hover:text-yellow-300">เกี่ยวกับเรา</a></li>
+              <li><a href="#" className="hover:text-yellow-300">บริการ</a></li>
+              <li><a href="#" className="hover:text-yellow-300">ติดต่อ</a></li>
             </ul>
           </div>
 

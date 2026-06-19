@@ -91,7 +91,7 @@ export default function LoginModal({ isOpen, onClose }) {
 
             <h2 className="text-3xl font-bold text-white">
               {isLoginMode
-                ? 'ยินดีต้อนรับสู่เฉิงตู'
+                ? 'ยินดีต้อนรับสู่ Panda Shop'
                 : 'เข้าร่วมเมืองนักรบมังกร'}
             </h2>
 
