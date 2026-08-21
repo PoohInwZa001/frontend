@@ -1,8 +1,12 @@
 "use client";
 import { useState, useEffect } from "react";
 import Swal from "sweetalert2";
+import { useRouter } from "next/navigation";
+
 const API_URL = "https://api.itdev.cmtc.ac.th/users";
+
 export default function UsersPage() {
+ const router = useRouter();
  const [users, setUsers] = useState([]);
  const [isLoading, setIsLoading] = useState(true);
  const [isError, setIsError] = useState(false);
@@ -51,7 +55,7 @@ export default function UsersPage() {
  <td className="p-2 border">{user.username}</td>
  <td className="p-2 border space-x-2">
  <button
- onClick={() => handleEdit(user.id)}
+ onClick={() => router.push(`/users/edit/${user.id}`)}
  className="px-3 py-1 bg-yellow-400 rounded text-sm"
  >
  แก้ไข
