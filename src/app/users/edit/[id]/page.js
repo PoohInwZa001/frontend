@@ -6,140 +6,304 @@ import Swal from "sweetalert2";
 
 const API_URL = "https://api.itdev.cmtc.ac.th/users";
 
-export default function EditMember() {
+export default function FormEdit() {
   const params = useParams();
   const router = useRouter();
   const id = params.id;
 
+  const [isLoading, setIsLoading] = useState(true);
+  const [isError, setIsError] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+
   const [form, setForm] = useState({
-    firstName: "",
-    lastName: "",
-    email: "",
-    password: "",
-    confirmPassword: "",
+    txt_firstname: "",
+    txt_lastname: "",
+    txt_username: "",
+    txt_password: "",
   });
 
-  const [loading, setLoading] = useState(true);
-
+  // ============================================================
   // ดึงข้อมูลสมาชิก
+  // ============================================================
   useEffect(() => {
-    const getUser = async () => {
-      try {
-        const res = await fetch(`${API_URL}/${id}`);
-
-        if (!res.ok) {
-          throw new Error("ไม่พบข้อมูลสมาชิก");
-        }
-
-        const data = await res.json();
-
-        setForm({
-          firstName: data.firstName || "",
-          lastName: data.lastName || "",
-          email: data.email || "",
-          password: data.password || "",
-          confirmPassword: data.password || "",
-        });
-      } catch (error) {
-        Swal.fire({
-          icon: "error",
-          title: "เกิดข้อผิดพลาด",
-          text: error.message,
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-
     if (id) {
-      getUser();
+      fetchUser();
     }
   }, [id]);
 
-  // เปลี่ยนค่าช่องกรอก
-  const handleChange = (e) => {
-    setForm({
-      ...form,
-      [e.target.name]: e.target.value,
-    });
+  const fetchUser = async () => {
+    setIsLoading(true);
+    setIsError(false);
+
+    try {
+      const response = await fetch(`${API_URL}/${id}`);
+
+      if (!response.ok) {
+        throw new Error(`Status ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      setForm({
+        txt_firstname: data.firstname ?? "",
+        txt_lastname: data.lastname ?? "",
+        txt_username: data.username ?? "",
+        txt_password: "",
+      });
+    } catch (error) {
+      console.error("Fetch User Error:", error);
+
+      setIsError(true);
+
+      await Swal.fire({
+        icon: "warning",
+        title: "ไม่สามารถโหลดข้อมูลได้",
+        text: "ไม่พบข้อมูลสมาชิก",
+        confirmButtonText: "ตกลง",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  // บันทึกข้อมูล
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  // ============================================================
+  // handleChange
+  // ============================================================
+  const handleChange = (e) => {
+    const { name, value } = e.target;
 
-    // ตรวจสอบข้อมูล
+    setForm((prevForm) => ({
+      ...prevForm,
+      [name]: value,
+    }));
+  };
+
+  // ============================================================
+  // ตรวจสอบข้อมูล
+  // ============================================================
+  const validateForm = () => {
+    if (!form.txt_firstname.trim()) {
+      Swal.fire({
+        icon: "warning",
+        title: "กรุณาระบุชื่อ",
+        text: "กรุณากรอกชื่อ",
+        confirmButtonText: "ตกลง",
+      });
+
+      return false;
+    }
+
+    if (!form.txt_lastname.trim()) {
+      Swal.fire({
+        icon: "warning",
+        title: "กรุณาระบุนามสกุล",
+        text: "กรุณากรอกนามสกุล",
+        confirmButtonText: "ตกลง",
+      });
+
+      return false;
+    }
+
+    if (!form.txt_username.trim()) {
+      Swal.fire({
+        icon: "warning",
+        title: "กรุณาระบุ Username",
+        text: "กรุณากรอก Username",
+        confirmButtonText: "ตกลง",
+      });
+
+      return false;
+    }
+
     if (
-      !form.firstName ||
-      !form.lastName ||
-      !form.email ||
-      !form.password ||
-      !form.confirmPassword
+      form.txt_password &&
+      form.txt_password.length < 6
     ) {
       Swal.fire({
         icon: "warning",
-        title: "กรุณากรอกข้อมูลให้ครบ",
+        title: "รหัสผ่านไม่ถูกต้อง",
+        text: "รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร",
+        confirmButtonText: "ตกลง",
       });
-      return;
+
+      return false;
     }
 
-    // ตรวจสอบรหัสผ่าน
-    if (form.password !== form.confirmPassword) {
-      Swal.fire({
-        icon: "error",
-        title: "รหัสผ่านไม่ตรงกัน",
-      });
+    return true;
+  };
+
+  // ============================================================
+  // แก้ไขข้อมูลสมาชิก
+  // ============================================================
+  const handleUpdate = async (e) => {
+    e.preventDefault();
+
+    if (!validateForm()) {
       return;
     }
 
     try {
-      const res = await fetch(`${API_URL}/${id}`, {
+      setIsSaving(true);
+
+      // ข้อมูลที่จะส่ง
+      const payload = {
+        firstname: form.txt_firstname,
+        lastname: form.txt_lastname,
+        username: form.txt_username,
+      };
+
+      // ถ้ากรอกรหัสผ่านใหม่ ค่อยส่ง password
+      if (form.txt_password) {
+        payload.password = form.txt_password;
+      }
+
+      const response = await fetch(`${API_URL}/${id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          firstName: form.firstName,
-          lastName: form.lastName,
-          email: form.email,
-          password: form.password,
-        }),
+        body: JSON.stringify(payload),
       });
 
-      if (!res.ok) {
-        throw new Error(`เกิดข้อผิดพลาด ${res.status}`);
+      // พยายามอ่าน response
+      let result = {};
+
+      try {
+        result = await response.json();
+      } catch {
+        result = {};
       }
 
+      // ========================================================
+      // สำเร็จ
+      // ========================================================
+      if (response.ok) {
+        await Swal.fire({
+          icon: "success",
+          title: "บันทึกสำเร็จ!",
+          text: "ปรับปรุงข้อมูลผู้ใช้เรียบร้อยแล้ว",
+          confirmButtonText: "ตกลง",
+          confirmButtonColor: "#2E75B6",
+        });
+
+        router.push("/users");
+        return;
+      }
+
+      // ========================================================
+      // 400
+      // ========================================================
+      if (response.status === 400) {
+        await Swal.fire({
+          icon: "warning",
+          title: `ข้อมูลไม่ถูกต้อง (status: ${response.status})`,
+          text: result.message || "ข้อมูลที่ส่งไม่ถูกต้อง",
+          confirmButtonText: "ตกลง",
+          confirmButtonColor: "#fecc00",
+        });
+
+        return;
+      }
+
+      // ========================================================
+      // 404
+      // ========================================================
+      if (response.status === 404) {
+        await Swal.fire({
+          icon: "error",
+          title: "ไม่พบสมาชิก",
+          text: "ไม่พบข้อมูลสมาชิกที่ต้องการแก้ไข",
+          confirmButtonText: "ตกลง",
+        });
+
+        return;
+      }
+
+      // ========================================================
+      // 500+
+      // ========================================================
+      if (response.status >= 500) {
+        await Swal.fire({
+          icon: "error",
+          title: `เกิดข้อผิดพลาดที่เซิร์ฟเวอร์ (status: ${response.status})`,
+          text: result.message || "เกิดข้อผิดพลาดที่เซิร์ฟเวอร์",
+          confirmButtonText: "ตกลง",
+          confirmButtonColor: "#fe0505",
+        });
+
+        return;
+      }
+
+      // ========================================================
+      // Error อื่น ๆ เช่น 401 / 403
+      // ========================================================
       await Swal.fire({
-        icon: "success",
-        title: "แก้ไขสมาชิกสำเร็จ",
-        text: "แก้ไขข้อมูลเรียบร้อยแล้ว",
+        icon: "error",
+        title: `บันทึกไม่สำเร็จ (status: ${response.status})`,
+        text: result.message || "เกิดข้อผิดพลาด",
         confirmButtonText: "ตกลง",
       });
-
-      router.push("/users");
     } catch (error) {
-      Swal.fire({
-        icon: "error",
-        title: "แก้ไขสมาชิกไม่สำเร็จ",
-        text: error.message,
+      // ========================================================
+      // กรณีเชื่อมต่อ Server ไม่ได้
+      // ========================================================
+      console.error("Update Error:", error);
+
+      await Swal.fire({
+        icon: "warning",
+        title: "ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้",
+        text: "กรุณาตรวจสอบการเชื่อมต่ออินเทอร์เน็ต แล้วลองใหม่อีกครั้ง",
+        confirmButtonText: "ตกลง",
+        confirmButtonColor: "#fc006d",
       });
+    } finally {
+      setIsSaving(false);
     }
   };
 
-  // กำลังโหลดข้อมูล
-  if (loading) {
+  // ============================================================
+  // Loading
+  // ============================================================
+  if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100">
-        <p className="text-gray-600">กำลังโหลดข้อมูล...</p>
+        <div className="bg-white p-8 rounded-2xl shadow-lg">
+          <p className="text-gray-600">
+            กำลังโหลดข้อมูล...
+          </p>
+        </div>
       </div>
     );
   }
 
+  // ============================================================
+  // Error
+  // ============================================================
+  if (isError) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-100">
+        <div className="bg-white p-8 rounded-2xl shadow-lg text-center">
+          <h1 className="text-xl font-bold text-red-600 mb-4">
+            ไม่สามารถโหลดข้อมูลได้
+          </h1>
+
+          <button
+            onClick={() => router.back()}
+            className="bg-gray-600 text-white px-6 py-2 rounded-lg hover:bg-gray-700"
+          >
+            กลับ
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // ============================================================
+  // หน้าแก้ไข
+  // ============================================================
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
-      
-      <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-xl border border-gray-200">
+      <div className="w-full max-w-md bg-white rounded-2xl shadow-xl border border-gray-200 p-8">
 
         {/* หัวข้อ */}
         <div className="text-center mb-6">
@@ -152,7 +316,7 @@ export default function EditMember() {
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleUpdate} className="space-y-4">
 
           {/* ชื่อ */}
           <div>
@@ -162,8 +326,8 @@ export default function EditMember() {
 
             <input
               type="text"
-              name="firstName"
-              value={form.firstName}
+              name="txt_firstname"
+              value={form.txt_firstname}
               onChange={handleChange}
               placeholder="กรอกชื่อ"
               className="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
@@ -178,26 +342,26 @@ export default function EditMember() {
 
             <input
               type="text"
-              name="lastName"
-              value={form.lastName}
+              name="txt_lastname"
+              value={form.txt_lastname}
               onChange={handleChange}
               placeholder="กรอกนามสกุล"
               className="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
             />
           </div>
 
-          {/* Email */}
+          {/* Username */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Email
+              Username
             </label>
 
             <input
-              type="email"
-              name="email"
-              value={form.email}
+              type="text"
+              name="txt_username"
+              value={form.txt_username}
               onChange={handleChange}
-              placeholder="example@email.com"
+              placeholder="กรอก Username"
               className="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
             />
           </div>
@@ -205,47 +369,37 @@ export default function EditMember() {
           {/* Password */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              รหัสผ่าน
+              รหัสผ่านใหม่
             </label>
 
             <input
               type="password"
-              name="password"
-              value={form.password}
+              name="txt_password"
+              value={form.txt_password}
               onChange={handleChange}
-              placeholder="กรอกรหัสผ่าน"
+              placeholder="กรอกรหัสผ่านใหม่"
               className="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
             />
-          </div>
 
-          {/* Confirm Password */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              ยืนยันรหัสผ่าน
-            </label>
-
-            <input
-              type="password"
-              name="confirmPassword"
-              value={form.confirmPassword}
-              onChange={handleChange}
-              placeholder="กรอกรหัสผ่านอีกครั้ง"
-              className="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-            />
+            <p className="text-xs text-gray-400 mt-1">
+              เว้นว่างไว้หากไม่ต้องการเปลี่ยนรหัสผ่าน
+            </p>
           </div>
 
           {/* ปุ่มบันทึก */}
           <button
             type="submit"
-            className="w-full rounded-lg bg-blue-600 py-3 font-semibold text-white hover:bg-blue-700 transition"
+            disabled={isSaving}
+            className="w-full rounded-lg bg-blue-600 py-3 font-semibold text-white hover:bg-blue-700 transition disabled:bg-gray-400"
           >
-            บันทึกการแก้ไข
+            {isSaving ? "กำลังบันทึก..." : "บันทึกการแก้ไข"}
           </button>
 
           {/* ปุ่มยกเลิก */}
           <button
             type="button"
             onClick={() => router.back()}
+            disabled={isSaving}
             className="w-full rounded-lg bg-gray-300 py-3 font-semibold text-gray-700 hover:bg-gray-400 transition"
           >
             ยกเลิก
