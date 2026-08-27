@@ -25,7 +25,7 @@ export default function Navigation() {
   const menuItems = [
     { name: 'หน้าแรก', href: '/' },
     { name: 'เกี่ยวกับเรา', href: '/about' },
-    { name: 'บริการ', href: '/service' },
+    { name: 'สินค้า', href: '/service' },
     { name: 'ติดต่อ', href: '/contact' },
     { name: 'Sign In', href: '/login' },
     { name: 'Sign Up', href: '/register' }

@@ -1,27 +1,25 @@
 import { Prompt } from "next/font/google";
 import "./globals.css";
-import Navbar from "@/components/Navigation";
+
+import Navigation from "@/components/Navigation";
 import Footersection from "@/components/Footersection";
 
 const prompt = Prompt({
   subsets: ["thai", "latin"],
-  weight: ["800"],
+  weight: ["400", "500", "600", "700", "800"],
   variable: "--font-prompt",
 });
 
 export const metadata = {
-  title: "วันนี้ซื้ออะไรร",
-  description: "Pokemon",
+  title: "วันนี้ซื้ออะไร",
+  description: "Panda Shop",
 };
 
 export default function RootLayout({ children }) {
   return (
-    <html
-      lang="en"
-      className={`${prompt.variable} h-full antialiased`}
-    >
+    <html lang="th" className={prompt.variable}>
       <body className="min-h-screen flex flex-col">
-        <Navbar />
+        <Navigation />
 
         <main className="flex-1">
           {children}

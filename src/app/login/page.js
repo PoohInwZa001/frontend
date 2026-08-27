@@ -2,11 +2,12 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import Swal from "sweetalert2";
 
-// ตรวจสอบ path นี้กับเอกสาร API อีกครั้ง
-// รูปแบบที่พบบ่อยคือ /users/login หรือ /login หรือ /auth/login
-const LOGIN_URL = "https://api.itdev.cmtc.ac.th/auth/login";
+// MockAPI
+const LOGIN_URL =
+  "https://6a7e719e3183f5fd884a1755.mockapi.io/api/frontend";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -25,14 +26,113 @@ export default function LoginPage() {
     });
   };
 
-
   const handleLogin = async (e) => {
     e.preventDefault();
+
+    if (!form.txt_username || !form.txt_password) {
+      await Swal.fire({
+        icon: "warning",
+        title: "กรุณากรอกข้อมูลให้ครบ",
+        confirmButtonText: "ตกลง",
+      });
+      return;
+    }
 
     try {
       setIsLoading(true);
 
-      const response = await fetch(LOGIN_URL, {
+      // =====================================
+      // 1. ค้นหา Username ใน MockAPI
+      // =====================================
+      const response = await fetch(
+        `${LOGIN_URL}?username=${encodeURIComponent(
+          form.txt_username
+        )}`
+      );
+
+      // =====================================
+      // 2. ตรวจ Server Error
+      // =====================================
+      if (response.status >= 500) {
+        await Swal.fire({
+          icon: "error",
+          title: "เกิดข้อผิดพลาดที่เซิร์ฟเวอร์",
+          text: `Server Error (status: ${response.status})`,
+          confirmButtonText: "ตกลง",
+        });
+        return;
+      }
+
+      // =====================================
+      // 3. ตรวจ 404
+      // =====================================
+      if (response.status === 404) {
+        await Swal.fire({
+          icon: "error",
+          title: "ไม่พบข้อมูล",
+          text: "ไม่พบ Username นี้ในระบบ",
+          confirmButtonText: "ตกลง",
+        });
+        return;
+      }
+
+      // =====================================
+      // 4. Error อื่น ๆ
+      // =====================================
+      if (!response.ok) {
+        await Swal.fire({
+          icon: "error",
+          title: "เข้าสู่ระบบไม่สำเร็จ",
+          text: `เกิดข้อผิดพลาด status: ${response.status}`,
+          confirmButtonText: "ตกลง",
+        });
+        return;
+      }
+
+      // =====================================
+      // 5. อ่านข้อมูล User
+      // =====================================
+      const users = await response.json().catch(() => []);
+
+      // =====================================
+      // 6. ไม่พบ Username
+      // =====================================
+      if (users.length === 0) {
+        await Swal.fire({
+          icon: "error",
+          title: "ไม่พบ Username",
+          text: "ไม่มี Username นี้ในระบบ",
+          confirmButtonText: "ตกลง",
+        });
+        return;
+      }
+
+      // =====================================
+      // 7. ตรวจ Username + Password
+      // =====================================
+      const user = users.find(
+        (item) =>
+          item.username === form.txt_username &&
+          item.password === form.txt_password
+      );
+
+      // =====================================
+      // 8. Login ไม่สำเร็จ
+      // =====================================
+      if (!user) {
+        await Swal.fire({
+          icon: "error",
+          title: "เข้าสู่ระบบไม่สำเร็จ",
+          text: "Username หรือรหัสผ่านไม่ถูกต้อง",
+          confirmButtonText: "ตกลง",
+        });
+        return;
+      }
+
+      // =====================================
+      // 9. Login สำเร็จ
+      // =====================================
+      const loginRecord = await fetch(LOGIN_URL, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -40,25 +140,22 @@ export default function LoginPage() {
         body: JSON.stringify({
           username: form.txt_username,
           password: form.txt_password,
+          action: "login",
         }),
       });
 
-      const result = await response.json().catch(() => ({}));
+      // =====================================
+      // 10. POST Login สำเร็จ
+      // =====================================
+      if (loginRecord.status === 201) {
+        console.log("บันทึก Login สำเร็จ");
 
-      if (response.ok) {
-        // เก็บ token ไว้ใช้ตอนเรียก API หน้าอื่น
-        if (result.token) {
-          localStorage.setItem("token", result.token);
-        }
-
-        // เก็บข้อมูลผู้ใช้ไว้แสดงชื่อบนหน้าจอ (ถ้า API ส่งกลับมา)
-        if (result.user) {
-          localStorage.setItem("user", JSON.stringify(result.user));
-        }
+        localStorage.setItem("user", JSON.stringify(user));
 
         await Swal.fire({
           icon: "success",
           title: "เข้าสู่ระบบสำเร็จ",
+          text: "บันทึก action: login แล้ว",
           timer: 1200,
           showConfirmButton: false,
         });
@@ -67,40 +164,34 @@ export default function LoginPage() {
         return;
       }
 
-      // 401 = ยืนยันตัวตนไม่ผ่าน แยกข้อความให้ชัด ผู้ใช้จะได้รู้ว่าต้องแก้อะไร
-      if (response.status === 401) {
+      // =====================================
+      // 11. POST Login เจอ 500
+      // =====================================
+      if (loginRecord.status >= 500) {
         await Swal.fire({
           icon: "error",
-          title: "เข้าสู่ระบบไม่สำเร็จ",
-          text: result.message || "Username หรือรหัสผ่านไม่ถูกต้อง",
+          title: "เกิดข้อผิดพลาดที่เซิร์ฟเวอร์",
+          text: `Server Error (status: ${loginRecord.status})`,
           confirmButtonText: "ตกลง",
         });
-      } else if (response.status === 400) {
-        await Swal.fire({
-          icon: "warning",
-          title: `ข้อมูลไม่ถูกต้อง (status: ${response.status})`,
-          text: result.message || "กรุณาตรวจสอบข้อมูลที่กรอก",
-          confirmButtonText: "ตกลง",
-          confirmButtonColor: "#fecc00",
-        });
-      } else if (response.status >= 500) {
-        await Swal.fire({
-          icon: "error",
-          title: `เกิดข้อผิดพลาดที่เซิร์ฟเวอร์ (status: ${response.status})`,
-          text: result.message || "กรุณาลองใหม่ภายหลัง",
-          confirmButtonText: "ตกลง",
-          confirmButtonColor: "#fe0505",
-        });
-      } else {
-        await Swal.fire({
-          icon: "error",
-          title: `เข้าสู่ระบบไม่สำเร็จ (status: ${response.status})`,
-          text: result.message || "เกิดข้อผิดพลาด",
-          confirmButtonText: "ตกลง",
-        });
+        return;
       }
+
+      // =====================================
+      // 12. POST Login Error
+      // =====================================
+      await Swal.fire({
+        icon: "error",
+        title: "บันทึก Login ไม่สำเร็จ",
+        text: `เกิดข้อผิดพลาด status: ${loginRecord.status}`,
+        confirmButtonText: "ตกลง",
+      });
     } catch (error) {
-      // เข้าที่นี่เฉพาะตอนยิง request ไม่ถึง server เลย
+      // =====================================
+      // 13. ไม่มี Internet
+      // =====================================
+      console.error("Login Error:", error);
+
       await Swal.fire({
         icon: "warning",
         title: "ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้",
@@ -113,70 +204,184 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 p-6">
-      <div className="w-full max-w-md bg-white rounded-lg shadow-md border">
-        {/* Header */}
-        <div className="border-b px-6 py-5 text-center">
-          <h1 className="text-2xl font-bold text-gray-800">เข้าสู่ระบบ</h1>
-          <p className="text-sm text-gray-500 mt-1">
-            กรุณากรอก Username และรหัสผ่านของคุณ
-          </p>
+    <main className="relative min-h-screen overflow-hidden bg-gradient-to-br from-green-900 via-emerald-800 to-yellow-700">
+
+      {/* =========================
+          BACKGROUND OVERLAY
+      ========================== */}
+      <div className="absolute inset-0 bg-black/40" />
+
+      {/* =========================
+          DRAGON DECORATION
+      ========================== */}
+
+      {/* มังกรซ้ายบน */}
+      <div className="absolute -left-16 top-10 opacity-20 pointer-events-none">
+        <Image
+          src="/dragon2.png"
+          alt="dragon"
+          width={280}
+          height={280}
+        />
+      </div>
+
+      {/* มังกรขวาล่าง */}
+      <div className="absolute -right-16 bottom-0 opacity-20 pointer-events-none">
+        <Image
+          src="/dragon.png"
+          alt="dragon"
+          width={300}
+          height={300}
+        />
+      </div>
+
+      {/* =========================
+          LOGIN CONTENT
+      ========================== */}
+      <div className="relative z-10 flex min-h-screen items-center justify-center px-6 py-12">
+
+        <div className="grid w-full max-w-5xl overflow-hidden rounded-3xl border border-green-400/40 bg-green-950/80 shadow-2xl backdrop-blur-md lg:grid-cols-2">
+
+          {/* =========================
+              LEFT : PANDA
+          ========================== */}
+          <div className="relative hidden min-h-[600px] items-center justify-center overflow-hidden bg-green-900/50 lg:flex">
+
+            {/* Glow */}
+            <div className="absolute h-80 w-80 rounded-full bg-yellow-400/10 blur-3xl" />
+
+            {/* Panda */}
+            <div className="relative z-10">
+              <Image
+                src="/แม่แพนด้า.png"
+                alt="Panda Shop"
+                width={500}
+                height={500}
+                priority
+                className="object-contain drop-shadow-2xl"
+              />
+            </div>
+
+          </div>
+
+          {/* =========================
+              RIGHT : LOGIN FORM
+          ========================== */}
+          <div className="flex items-center justify-center p-8 sm:p-12">
+
+            <div className="w-full max-w-md">
+
+              {/* Header */}
+              <div className="mb-8 text-center lg:text-left">
+
+                <div className="mb-4 text-5xl lg:hidden">
+                  🐼
+                </div>
+
+                <h1 className="text-4xl font-bold text-white">
+                  เข้าสู่ระบบ
+                </h1>
+
+                <p className="mt-3 text-green-200">
+                  ยินดีต้อนรับกลับสู่อาณาจักร Panda Shop
+                </p>
+
+              </div>
+
+              {/* Form */}
+              <form
+                onSubmit={handleLogin}
+                className="space-y-6"
+              >
+
+                {/* Username */}
+                <div>
+
+                  <label className="mb-2 block font-medium text-green-100">
+                    Username
+                  </label>
+
+                  <input
+                    type="text"
+                    name="txt_username"
+                    value={form.txt_username}
+                    onChange={handleChange}
+                    autoComplete="username"
+                    placeholder="กรอก Username"
+                    className="w-full rounded-xl border border-green-400/30 bg-green-900/60 px-4 py-3 text-white outline-none transition placeholder:text-green-300/50 focus:border-yellow-300 focus:ring-2 focus:ring-yellow-300/20"
+                  />
+
+                </div>
+
+                {/* Password */}
+                <div>
+
+                  <label className="mb-2 block font-medium text-green-100">
+                    Password
+                  </label>
+
+                  <input
+                    type="password"
+                    name="txt_password"
+                    value={form.txt_password}
+                    onChange={handleChange}
+                    autoComplete="current-password"
+                    placeholder="กรอกรหัสผ่าน"
+                    className="w-full rounded-xl border border-green-400/30 bg-green-900/60 px-4 py-3 text-white outline-none transition placeholder:text-green-300/50 focus:border-yellow-300 focus:ring-2 focus:ring-yellow-300/20"
+                  />
+
+                </div>
+
+                {/* Login Button */}
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="w-full rounded-xl bg-green-500 px-5 py-3.5 font-bold text-white shadow-lg transition-all duration-300 hover:-translate-y-1 hover:bg-green-400 hover:shadow-green-500/30 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {isLoading
+                    ? "กำลังเข้าสู่ระบบ..."
+                    : "เข้าสู่ระบบ 🐉"}
+                </button>
+
+              </form>
+
+              {/* Register */}
+              <div className="mt-8 text-center">
+
+                <p className="text-green-200">
+                  ยังไม่มีบัญชี?
+                </p>
+
+                <button
+                  type="button"
+                  onClick={() => router.push("/register")}
+                  className="mt-2 font-bold text-yellow-300 transition hover:text-yellow-200 hover:underline"
+                >
+                  สมัครสมาชิก
+                </button>
+
+              </div>
+
+              {/* Back Home */}
+              <div className="mt-6 text-center">
+
+                <button
+                  type="button"
+                  onClick={() => router.push("/")}
+                  className="text-sm text-green-300 transition hover:text-white"
+                >
+                  ← กลับหน้าหลัก
+                </button>
+
+              </div>
+
+            </div>
+
+          </div>
+
         </div>
 
-        <form onSubmit={handleLogin} className="p-6 space-y-4">
-          <div>
-            <label className="block text-black mb-1">Username</label>
-            <input
-              type="text"
-              name="txt_username"
-              value={form.txt_username}
-              onChange={handleChange}
-              autoComplete="username"
-              className="w-full border text-black border-black rounded-md px-4 py-2"
-              placeholder="username"
-            />
-          </div>
-
-          <div>
-            <label className="block text-black mb-1">Password</label>
-            <div className="relative">
-              <input
-                type="password"
-                name="txt_password"
-                value={form.txt_password}
-                onChange={handleChange}
-                autoComplete="current-password"
-                className="w-full border text-black border-black rounded-md px-4 py-2 pr-16"
-                placeholder="password"
-              />
-              <button
-                type="button"
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-blue-600 hover:underline"
-              >
-              </button>
-            </div>
-          </div>
-
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="w-full px-5 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isLoading ? "กำลังเข้าสู่ระบบ..." : "เข้าสู่ระบบ"}
-          </button>
-
-          <p className="text-center text-sm text-gray-600 pt-2">
-            ยังไม่มีบัญชี?{" "}
-            <button
-              type="button"
-              onClick={() => router.push("/register")}
-              className="text-blue-600 hover:underline"
-            >
-              สมัครสมาชิก
-            </button>
-          </p>
-        </form>
       </div>
-    </div>
+    </main>
   );
 }

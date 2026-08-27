@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import Swal from "sweetalert2";
 import { useRouter } from "next/navigation";
 
-const API_URL = "https://api.itdev.cmtc.ac.th/users";
+const API_URL = "https://6a7e719e3183f5fd884a1755.mockapi.io/api/frontend";
 
 export default function UsersPage() {
  const [deletingId, setDeletingId] = useState(null); //กำหนดค่า state ไว้ด้านบน
@@ -72,19 +72,35 @@ export default function UsersPage() {
   }, []);
 
  const fetchUsers = async () => {
- setIsLoading(true);
- setIsError(false);
- try {
- const response = await fetch(API_URL);
- if (!response.ok) throw new Error(`Status ${response.status}`);
- const data = await response.json();
- setUsers(data);
- } catch (error) {
- setIsError(true);
- await Swal.fire({ icon: "warning", title: "ไม่สามารถโหลดข้อมูลได้" });
- } finally {
- setIsLoading(false);
- }
+  setIsLoading(true);
+  setIsError(false);
+
+  try {
+    const response = await fetch(API_URL);
+
+    if (!response.ok) {
+      throw new Error(`Status ${response.status}`);
+    }
+
+    const data = await response.json();
+
+   const registerUsers = data.filter(
+  (item) => item.action !== "login"
+);
+
+    setUsers(registerUsers);
+
+  } catch (error) {
+    setIsError(true);
+
+    await Swal.fire({
+      icon: "warning",
+      title: "ไม่สามารถโหลดข้อมูลได้",
+    });
+
+  } finally {
+    setIsLoading(false);
+  }
  };
  if (!isAuth) return null;  //เช้คค่า login
  if (isLoading) return <p>กำลังโหลดข้อมูล...</p>;

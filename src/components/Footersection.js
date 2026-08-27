@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 export default function Footersection() {
   return (
     <footer className="relative py-12 text-green-100">
@@ -10,20 +12,20 @@ export default function Footersection() {
         }}
       />
 
-      {/* Overlay สว่างขึ้น */}
+      {/* Overlay */}
       <div className="absolute inset-0 bg-black/30" />
 
-      {/* เอฟเฟกต์ไล่สี */}
+      {/* Gradient */}
       <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
 
       {/* Content */}
-      <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="relative z-10 mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
 
           {/* ข้อมูลเว็บไซต์ */}
           <div>
-            <h2 className="text-white text-xl font-bold mb-4">
+            <h2 className="mb-4 text-xl font-bold text-white">
               Panda Shop
             </h2>
 
@@ -36,21 +38,54 @@ export default function Footersection() {
 
           {/* เมนูลัด */}
           <div>
-            <h3 className="text-white text-lg font-semibold mb-4">
+            <h3 className="mb-4 text-lg font-semibold text-white">
               เมนูลัด
             </h3>
 
             <ul className="space-y-2 text-sm">
-              <li><a href="#" className="hover:text-yellow-300">หน้าแรก</a></li>
-              <li><a href="#" className="hover:text-yellow-300">เกี่ยวกับเรา</a></li>
-              <li><a href="#" className="hover:text-yellow-300">บริการ</a></li>
-              <li><a href="#" className="hover:text-yellow-300">ติดต่อ</a></li>
+
+              <li>
+                <Link
+                  href="/"
+                  className="transition-colors hover:text-yellow-300"
+                >
+                  หน้าแรก
+                </Link>
+              </li>
+
+              <li>
+                <Link
+                  href="/about"
+                  className="transition-colors hover:text-yellow-300"
+                >
+                  เกี่ยวกับเรา
+                </Link>
+              </li>
+
+              <li>
+                <Link
+                  href="/service"
+                  className="transition-colors hover:text-yellow-300"
+                >
+                  สินค้า
+                </Link>
+              </li>
+
+              <li>
+                <Link
+                  href="/contact"
+                  className="transition-colors hover:text-yellow-300"
+                >
+                  ติดต่อ
+                </Link>
+              </li>
+
             </ul>
           </div>
 
           {/* ติดต่อเรา */}
           <div>
-            <h3 className="text-white text-lg font-semibold mb-4">
+            <h3 className="mb-4 text-lg font-semibold text-white">
               ติดต่อเรา
             </h3>
 
@@ -65,11 +100,11 @@ export default function Footersection() {
         </div>
 
         {/* Copyright */}
-        <div className="border-t border-green-900/50 mt-12 pt-8 text-center text-sm">
+        <div className="mt-12 border-t border-green-900/50 pt-8 text-center text-sm">
           © {new Date().getFullYear()} Panda Shop. All rights reserved.
         </div>
 
       </div>
     </footer>
-  )
+  );
 }
