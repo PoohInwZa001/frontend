@@ -44,7 +44,7 @@ export default function Cardsection() {
           <div className="border rounded-lg overflow-hidden shadow-sm hover:shadow-lg transition-shadow duration-300 bg-white">
             <div className="relative w-full h-48 bg-gray-100">
               <Image
-                src="/เสือ.png"
+                src="/เสือ1.png"
                 alt="เสือน้อย"
                 fill
                 className="object-cover"
@@ -70,7 +70,7 @@ export default function Cardsection() {
           <div className="border rounded-lg overflow-hidden shadow-sm hover:shadow-lg transition-shadow duration-300 bg-white">
             <div className="relative w-full h-48 bg-gray-100">
               <Image
-                src="/เต่า1.png"
+                src="/เต่า2.png"
                 alt="ผู้เฒ่าเต่า"
                 fill
                 className="object-cover"

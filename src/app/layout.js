@@ -11,7 +11,7 @@ const prompt = Prompt({
 });
 
 export const metadata = {
-  title: "วันนี้ซื้ออะไร",
+  title: "Panda Shop",
   description: "Panda Shop",
 };
 
