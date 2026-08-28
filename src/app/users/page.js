@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -15,18 +16,13 @@ export default function UsersPage() {
   // =====================================
 
   const [users, setUsers] = useState([]);
-
   const [deletingId, setDeletingId] = useState(null);
-
-  // กำหนดค่า state ไว้เช็ค login
   const [isAuth, setIsAuth] = useState(false);
-
   const [isLoading, setIsLoading] = useState(true);
-
   const [isError, setIsError] = useState(false);
 
   // =====================================
-  // CHECK LOGIN / TOKEN
+  // CHECK LOGIN
   // =====================================
 
   useEffect(() => {
@@ -34,16 +30,12 @@ export default function UsersPage() {
 
     console.log("Token:", token);
 
-    // ไม่มี Token
     if (!token) {
       router.push("/login");
       return;
     }
 
-    // มี Token
     setIsAuth(true);
-
-    // โหลดข้อมูล Users
     fetchUsers();
   }, []);
 
@@ -61,33 +53,24 @@ export default function UsersPage() {
         cache: "no-store",
       });
 
-      console.log(
-        "GET Users Status:",
-        response.status
-      );
+      console.log("GET Users Status:", response.status);
 
       if (!response.ok) {
-        throw new Error(
-          `Status ${response.status}`
-        );
+        throw new Error(`Status ${response.status}`);
       }
 
       const data = await response.json();
 
       console.log("ข้อมูลทั้งหมด:", data);
 
-      // เอาเฉพาะข้อมูล Register
-      // ไม่เอาข้อมูล Action Login
+      // เอาเฉพาะ Register
       const registerUsers = data.filter(
         (item) => item.action !== "login"
       );
 
       setUsers(registerUsers);
     } catch (error) {
-      console.error(
-        "Fetch Users Error:",
-        error
-      );
+      console.error("Fetch Users Error:", error);
 
       setIsError(true);
 
@@ -96,6 +79,7 @@ export default function UsersPage() {
         title: "ไม่สามารถโหลดข้อมูลได้",
         text: error.message,
         confirmButtonText: "ตกลง",
+        confirmButtonColor: "#166534",
       });
     } finally {
       setIsLoading(false);
@@ -107,68 +91,43 @@ export default function UsersPage() {
   // =====================================
 
   const handleDelete = async (id) => {
-    const user = users.find(
-      (u) => u.id === id
-    );
+    const user = users.find((u) => u.id === id);
 
     const result = await Swal.fire({
       icon: "warning",
-
       title: "ยืนยันการลบข้อมูล",
-
       html: user
         ? `ต้องการลบ <b>${user.firstname} ${user.lastname}</b> ใช่หรือไม่?<br>เมื่อลบแล้วจะไม่สามารถกู้คืนได้`
         : "เมื่อลบแล้วจะไม่สามารถกู้คืนได้",
-
       showCancelButton: true,
-
       confirmButtonText: "ลบเลย",
-
       cancelButtonText: "ยกเลิก",
-
       confirmButtonColor: "#dc2626",
-
       cancelButtonColor: "#6b7280",
-
       reverseButtons: true,
     });
 
-    if (!result.isConfirmed) {
-      return;
-    }
+    if (!result.isConfirmed) return;
 
     try {
       setDeletingId(id);
 
-      const response = await fetch(
-        `${API_URL}/${id}`,
-        {
-          method: "DELETE",
-        }
-      );
+      const response = await fetch(`${API_URL}/${id}`, {
+        method: "DELETE",
+      });
 
-      console.log(
-        "DELETE Status:",
-        response.status
-      );
+      console.log("DELETE Status:", response.status);
 
       if (!response.ok) {
-        const data =
-          await response
-            .json()
-            .catch(() => ({}));
+        const data = await response.json().catch(() => ({}));
 
         throw new Error(
-          data.message ||
-            `Status ${response.status}`
+          data.message || `Status ${response.status}`
         );
       }
 
-      // เอาข้อมูลออกจากหน้าจอ
       setUsers((prev) =>
-        prev.filter(
-          (u) => u.id !== id
-        )
+        prev.filter((u) => u.id !== id)
       );
 
       await Swal.fire({
@@ -178,16 +137,14 @@ export default function UsersPage() {
         showConfirmButton: false,
       });
     } catch (error) {
-      console.error(
-        "Delete Error:",
-        error
-      );
+      console.error("Delete Error:", error);
 
       await Swal.fire({
         icon: "error",
         title: "ลบข้อมูลไม่สำเร็จ",
         text: error.message,
         confirmButtonText: "ตกลง",
+        confirmButtonColor: "#166534",
       });
     } finally {
       setDeletingId(null);
@@ -195,40 +152,7 @@ export default function UsersPage() {
   };
 
   // =====================================
-  // LOGOUT
-  // =====================================
-
-  const handleLogout = async () => {
-    const result = await Swal.fire({
-      icon: "question",
-
-      title: "ต้องการออกจากระบบ?",
-
-      showCancelButton: true,
-
-      confirmButtonText: "ออกจากระบบ",
-
-      cancelButtonText: "ยกเลิก",
-
-      confirmButtonColor: "#dc2626",
-    });
-
-    if (!result.isConfirmed) {
-      return;
-    }
-
-    // ลบ Token
-    localStorage.removeItem("token");
-
-    // ลบข้อมูล User
-    localStorage.removeItem("user");
-
-    // กลับหน้า Login
-    router.push("/login");
-  };
-
-  // =====================================
-  // CHECK AUTH
+  // AUTH
   // =====================================
 
   if (!isAuth) return null;
@@ -239,8 +163,20 @@ export default function UsersPage() {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <p>กำลังโหลดข้อมูล...</p>
+      <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-gradient-to-br from-green-950 via-emerald-900 to-yellow-800">
+        <div className="absolute inset-0 bg-black/40" />
+
+        <div className="relative z-10 text-center">
+          <div className="mx-auto mb-5 h-14 w-14 animate-spin rounded-full border-4 border-white/20 border-t-yellow-400" />
+
+          <p className="text-lg font-semibold text-white">
+            กำลังโหลดข้อมูล...
+          </p>
+
+          <p className="mt-1 text-sm text-green-100/70">
+            Panda Shop
+          </p>
+        </div>
       </div>
     );
   }
@@ -251,19 +187,29 @@ export default function UsersPage() {
 
   if (isError) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-4">
+      <div className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-gradient-to-br from-green-950 via-emerald-900 to-yellow-800">
+        <div className="absolute inset-0 bg-black/40" />
 
-        <p className="text-red-500">
-          เกิดข้อผิดพลาดในการโหลดข้อมูล
-        </p>
+        <div className="relative z-10 rounded-2xl border border-red-400/30 bg-black/40 p-10 text-center shadow-2xl backdrop-blur-md">
+          <div className="mb-4 text-5xl">
+            ⚠️
+          </div>
 
-        <button
-          onClick={fetchUsers}
-          className="rounded bg-green-500 px-4 py-2 text-white"
-        >
-          ลองใหม่
-        </button>
+          <h2 className="text-xl font-bold text-white">
+            เกิดข้อผิดพลาด
+          </h2>
 
+          <p className="mt-2 text-sm text-gray-300">
+            ไม่สามารถโหลดข้อมูลสมาชิกได้
+          </p>
+
+          <button
+            onClick={fetchUsers}
+            className="mt-6 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 px-6 py-3 font-semibold text-white shadow-lg transition hover:scale-105 hover:from-green-400 hover:to-emerald-500"
+          >
+            ลองใหม่
+          </button>
+        </div>
       </div>
     );
   }
@@ -273,228 +219,296 @@ export default function UsersPage() {
   // =====================================
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-green-950 via-emerald-900 to-yellow-800">
 
-      {/* =====================================
-          HEADER
-      ===================================== */}
+      {/* Background Overlay */}
+      <div className="absolute inset-0 bg-black/45" />
 
-      <div className="mb-6 flex items-center justify-between">
+      {/* Decorative Glow */}
+      <div className="absolute -left-40 -top-40 h-96 w-96 rounded-full bg-green-400/20 blur-3xl" />
 
-        <div>
+      <div className="absolute -bottom-40 -right-40 h-96 w-96 rounded-full bg-yellow-400/20 blur-3xl" />
 
-          <h1 className="text-2xl font-bold">
-            รายชื่อสมาชิก
-          </h1>
+      {/* Main */}
+      <main className="relative z-10 mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
 
-          <p className="mt-1 text-sm text-gray-500">
-            จัดการข้อมูลสมาชิก
-          </p>
+        {/* =====================================
+            HEADER
+        ===================================== */}
 
+        <div className="mb-8 overflow-hidden rounded-3xl border border-green-400/20 bg-black/35 p-6 shadow-2xl backdrop-blur-md sm:p-8">
+
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+
+            <div>
+              <div className="mb-2 flex items-center gap-2">
+                <span className="text-2xl">
+                  🐼
+                </span>
+
+                <span className="text-sm font-semibold uppercase tracking-[0.25em] text-yellow-300">
+                  Panda Shop
+                </span>
+              </div>
+
+              <h1 className="text-3xl font-extrabold text-white sm:text-4xl">
+                รายชื่อสมาชิก
+              </h1>
+
+              <p className="mt-2 text-sm text-green-100/70">
+                จัดการข้อมูลสมาชิกภายในระบบ
+              </p>
+            </div>
+
+            {/* Count */}
+            <div className="hidden rounded-xl border border-white/10 bg-white/5 px-5 py-3 text-center sm:block">
+              <p className="text-xs text-gray-400">
+                สมาชิกทั้งหมด
+              </p>
+
+              <p className="text-2xl font-bold text-yellow-300">
+                {users.length}
+              </p>
+            </div>
+
+          </div>
         </div>
 
-        {/* LOGOUT */}
+        {/* =====================================
+            MOBILE COUNT
+        ===================================== */}
 
-        <button
-          onClick={handleLogout}
-          className="rounded-lg bg-red-500 px-4 py-2 font-medium text-white transition hover:bg-red-600"
-        >
-          ออกจากระบบ
-        </button>
+        <div className="mb-5 rounded-2xl border border-white/10 bg-black/30 p-4 backdrop-blur-md sm:hidden">
 
-      </div>
+          <div className="flex items-center justify-between">
 
-      {/* =====================================
-          NO USERS
-      ===================================== */}
+            <span className="text-sm text-gray-300">
+              สมาชิกทั้งหมด
+            </span>
 
-      {users.length === 0 ? (
-
-        <div className="rounded-xl bg-white p-8 text-center shadow">
-
-          <p className="text-gray-500">
-            ยังไม่มีข้อมูลสมาชิกในระบบ
-          </p>
-
-        </div>
-
-      ) : (
-
-        <>
-          {/* =====================================
-              DESKTOP TABLE
-          ===================================== */}
-
-          <div className="hidden overflow-x-auto rounded-xl bg-white shadow md:block">
-
-            <table className="w-full border-collapse">
-
-              <thead>
-
-                <tr className="bg-green-900 text-left text-white">
-
-                  <th className="border p-3">
-                    ลำดับ
-                  </th>
-
-                  <th className="border p-3">
-                    ชื่อ
-                  </th>
-
-                  <th className="border p-3">
-                    นามสกุล
-                  </th>
-
-                  <th className="border p-3">
-                    Username
-                  </th>
-
-                  <th className="border p-3 text-center">
-                    จัดการ
-                  </th>
-
-                </tr>
-
-              </thead>
-
-              <tbody>
-
-                {users.map(
-                  (user, index) => (
-
-                    <tr
-                      key={user.id}
-                      className="border-b hover:bg-gray-50"
-                    >
-
-                      <td className="border p-3 text-center">
-                        {index + 1}
-                      </td>
-
-                      <td className="border p-3">
-                        {user.firstname}
-                      </td>
-
-                      <td className="border p-3">
-                        {user.lastname}
-                      </td>
-
-                      <td className="border p-3">
-                        {user.username}
-                      </td>
-
-                      <td className="space-x-2 border p-3 text-center">
-
-                        {/* แก้ไข */}
-
-                        <button
-                          onClick={() =>
-                            router.push(
-                              `/users/edit/${user.id}`
-                            )
-                          }
-                          className="rounded bg-yellow-400 px-3 py-1 text-sm font-medium hover:bg-yellow-500"
-                        >
-                          แก้ไข
-                        </button>
-
-                        {/* ลบ */}
-
-                        <button
-                          onClick={() =>
-                            handleDelete(
-                              user.id
-                            )
-                          }
-                          disabled={
-                            deletingId ===
-                            user.id
-                          }
-                          className="rounded bg-red-500 px-3 py-1 text-sm font-medium text-white hover:bg-red-600 disabled:cursor-not-allowed disabled:opacity-50"
-                        >
-                          {deletingId ===
-                          user.id
-                            ? "กำลังลบ..."
-                            : "ลบ"}
-                        </button>
-
-                      </td>
-
-                    </tr>
-
-                  )
-                )}
-
-              </tbody>
-
-            </table>
+            <span className="text-xl font-bold text-yellow-300">
+              {users.length}
+            </span>
 
           </div>
 
-          {/* =====================================
-              MOBILE CARD
-          ===================================== */}
+        </div>
 
-          <div className="space-y-4 md:hidden">
+        {/* =====================================
+            NO USERS
+        ===================================== */}
 
-            {users.map(
-              (user, index) => (
+        {users.length === 0 ? (
+
+          <div className="rounded-3xl border border-white/10 bg-black/35 p-12 text-center shadow-2xl backdrop-blur-md">
+
+            <div className="mb-5 text-6xl">
+              🐼
+            </div>
+
+            <h2 className="text-xl font-bold text-white">
+              ยังไม่มีข้อมูลสมาชิก
+            </h2>
+
+            <p className="mt-2 text-sm text-gray-400">
+              ยังไม่มีสมาชิกในระบบ Panda Shop
+            </p>
+
+          </div>
+
+        ) : (
+
+          <>
+            {/* =====================================
+                DESKTOP TABLE
+            ===================================== */}
+
+            <div className="hidden overflow-hidden rounded-3xl border border-green-400/20 bg-black/35 shadow-2xl backdrop-blur-md md:block">
+
+              <div className="overflow-x-auto">
+
+                <table className="w-full border-collapse">
+
+                  <thead>
+                    <tr className="bg-green-950/80 text-left">
+
+                      <th className="border-b border-white/10 p-5 text-sm font-semibold text-yellow-300">
+                        #
+                      </th>
+
+                      <th className="border-b border-white/10 p-5 text-sm font-semibold text-yellow-300">
+                        ชื่อ
+                      </th>
+
+                      <th className="border-b border-white/10 p-5 text-sm font-semibold text-yellow-300">
+                        นามสกุล
+                      </th>
+
+                      <th className="border-b border-white/10 p-5 text-sm font-semibold text-yellow-300">
+                        Username
+                      </th>
+
+                      <th className="border-b border-white/10 p-5 text-center text-sm font-semibold text-yellow-300">
+                        จัดการ
+                      </th>
+
+                    </tr>
+                  </thead>
+
+                  <tbody>
+
+                    {users.map((user, index) => (
+
+                      <tr
+                        key={user.id}
+                        className="group border-b border-white/5 transition hover:bg-green-500/10"
+                      >
+
+                        <td className="p-5 text-center font-bold text-green-300">
+                          {String(index + 1).padStart(2, "0")}
+                        </td>
+
+                        <td className="p-5 font-medium text-white">
+                          {user.firstname}
+                        </td>
+
+                        <td className="p-5 text-gray-300">
+                          {user.lastname}
+                        </td>
+
+                        <td className="p-5">
+
+                          <span className="rounded-lg border border-green-400/20 bg-green-500/10 px-3 py-1.5 text-sm text-green-300">
+                            @{user.username}
+                          </span>
+
+                        </td>
+
+                        <td className="p-5">
+
+                          <div className="flex justify-center gap-2">
+
+                            {/* Edit */}
+                            <button
+                              onClick={() =>
+                                router.push(
+                                  `/users/edit/${user.id}`
+                                )
+                              }
+                              className="rounded-xl border border-yellow-400/30 bg-yellow-400/10 px-4 py-2 text-sm font-semibold text-yellow-300 transition hover:bg-yellow-400 hover:text-black"
+                            >
+                              แก้ไข
+                            </button>
+
+                            {/* Delete */}
+                            <button
+                              onClick={() =>
+                                handleDelete(user.id)
+                              }
+                              disabled={
+                                deletingId === user.id
+                              }
+                              className="rounded-xl border border-red-400/30 bg-red-500/10 px-4 py-2 text-sm font-semibold text-red-300 transition hover:bg-red-500 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+                            >
+                              {deletingId === user.id
+                                ? "กำลังลบ..."
+                                : "ลบ"}
+                            </button>
+
+                          </div>
+
+                        </td>
+
+                      </tr>
+
+                    ))}
+
+                  </tbody>
+
+                </table>
+
+              </div>
+            </div>
+
+            {/* =====================================
+                MOBILE CARD
+            ===================================== */}
+
+            <div className="space-y-4 md:hidden">
+
+              {users.map((user, index) => (
 
                 <div
                   key={user.id}
-                  className="rounded-xl bg-white p-5 shadow"
+                  className="group rounded-3xl border border-green-400/20 bg-black/35 p-5 shadow-xl backdrop-blur-md transition hover:border-green-400/40"
                 >
 
-                  <div className="mb-3">
+                  <div className="mb-5 flex items-start justify-between">
 
-                    <p className="text-sm text-gray-400">
-                      สมาชิก #{index + 1}
-                    </p>
+                    <div className="flex items-center gap-3">
 
-                    <h2 className="text-lg font-bold">
-                      {user.firstname}{" "}
-                      {user.lastname}
-                    </h2>
+                      <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-green-500/15 text-2xl">
+                        🐼
+                      </div>
+
+                      <div>
+
+                        <p className="text-xs text-gray-500">
+                          MEMBER #{index + 1}
+                        </p>
+
+                        <h2 className="font-bold text-white">
+                          {user.firstname}{" "}
+                          {user.lastname}
+                        </h2>
+
+                      </div>
+
+                    </div>
+
+                    <span className="text-xs text-green-400">
+                      ● ACTIVE
+                    </span>
 
                   </div>
 
-                  <p className="text-sm">
+                  <div className="rounded-xl border border-white/5 bg-white/5 p-3">
 
-                    <span className="font-medium">
-                      Username:
-                    </span>{" "}
+                    <p className="text-xs text-gray-500">
+                      Username
+                    </p>
 
-                    {user.username}
+                    <p className="mt-1 font-medium text-green-300">
+                      @{user.username}
+                    </p>
 
-                  </p>
+                  </div>
 
                   <div className="mt-4 flex gap-2">
 
+                    {/* Edit */}
                     <button
                       onClick={() =>
                         router.push(
                           `/users/edit/${user.id}`
                         )
                       }
-                      className="flex-1 rounded bg-yellow-400 px-3 py-2 text-sm font-medium hover:bg-yellow-500"
+                      className="flex-1 rounded-xl border border-yellow-400/30 bg-yellow-400/10 px-3 py-3 text-sm font-semibold text-yellow-300 transition hover:bg-yellow-400 hover:text-black"
                     >
                       แก้ไข
                     </button>
 
+                    {/* Delete */}
                     <button
                       onClick={() =>
-                        handleDelete(
-                          user.id
-                        )
+                        handleDelete(user.id)
                       }
                       disabled={
-                        deletingId ===
-                        user.id
+                        deletingId === user.id
                       }
-                      className="flex-1 rounded bg-red-500 px-3 py-2 text-sm font-medium text-white hover:bg-red-600 disabled:opacity-50"
+                      className="flex-1 rounded-xl border border-red-400/30 bg-red-500/10 px-3 py-3 text-sm font-semibold text-red-300 transition hover:bg-red-500 hover:text-white disabled:opacity-40"
                     >
-                      {deletingId ===
-                      user.id
+                      {deletingId === user.id
                         ? "กำลังลบ..."
                         : "ลบ"}
                     </button>
@@ -503,13 +517,13 @@ export default function UsersPage() {
 
                 </div>
 
-              )
-            )}
+              ))}
 
-          </div>
-        </>
-      )}
+            </div>
+          </>
+        )}
 
+      </main>
     </div>
   );
 }

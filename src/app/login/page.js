@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -22,7 +23,7 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
 
   // =====================================
-  // เปลี่ยนค่าของ Input
+  // เปลี่ยนค่า Input
   // =====================================
   const handleChange = (e) => {
     setForm({
@@ -44,6 +45,7 @@ export default function LoginPage() {
       await Swal.fire({
         icon: "warning",
         title: "กรุณากรอกข้อมูลให้ครบ",
+        text: "กรุณากรอก Username และ Password",
         confirmButtonText: "ตกลง",
       });
 
@@ -53,10 +55,14 @@ export default function LoginPage() {
     try {
       setIsLoading(true);
 
-      console.log("กำลังค้นหา Username:", form.txt_username);
+      console.log("========== LOGIN ==========");
+      console.log(
+        "กำลังค้นหา Username:",
+        form.txt_username
+      );
 
       // =====================================
-      // 2. ค้นหา Username จาก MockAPI
+      // 2. GET USER
       // =====================================
       const response = await fetch(
         `${LOGIN_URL}?username=${encodeURIComponent(
@@ -71,7 +77,7 @@ export default function LoginPage() {
       console.log("GET Status:", response.status);
 
       // =====================================
-      // 3. Server Error 500+
+      // 3. SERVER ERROR
       // =====================================
       if (response.status >= 500) {
         await Swal.fire({
@@ -99,7 +105,7 @@ export default function LoginPage() {
       }
 
       // =====================================
-      // 5. Error อื่น ๆ
+      // 5. ERROR อื่น
       // =====================================
       if (!response.ok) {
         await Swal.fire({
@@ -119,9 +125,6 @@ export default function LoginPage() {
 
       console.log("ข้อมูลจาก API:", users);
 
-      // =====================================
-      // 7. ตรวจสอบว่าเป็น Array
-      // =====================================
       if (!Array.isArray(users)) {
         await Swal.fire({
           icon: "error",
@@ -134,33 +137,21 @@ export default function LoginPage() {
       }
 
       // =====================================
-      // 8. ไม่พบ Username
-      // =====================================
-      if (users.length === 0) {
-        await Swal.fire({
-          icon: "error",
-          title: "ไม่พบ Username",
-          text: "ไม่มี Username นี้ในระบบ",
-          confirmButtonText: "ตกลง",
-        });
-
-        return;
-      }
-
-      // =====================================
-      // 9. ตรวจ Username + Password
+      // 7. ตรวจสอบ Username + Password
       // =====================================
       const user = users.find(
         (item) =>
-          item.username === form.txt_username &&
-          item.password === form.txt_password &&
+          String(item.username).trim() ===
+            String(form.txt_username).trim() &&
+          String(item.password) ===
+            String(form.txt_password) &&
           item.action !== "login"
       );
 
       console.log("User ที่ค้นพบ:", user);
 
       // =====================================
-      // 10. Username / Password ผิด
+      // 8. Login ไม่สำเร็จ
       // =====================================
       if (!user) {
         await Swal.fire({
@@ -174,55 +165,71 @@ export default function LoginPage() {
       }
 
       // =====================================
-      // 11. LOGIN สำเร็จ
+      // 9. LOGIN สำเร็จ
       // =====================================
 
       // สร้าง Token
       const token = `login-${user.id}-${Date.now()}`;
 
+      // =====================================
       // เก็บ Token
+      // =====================================
       localStorage.setItem("token", token);
 
+      // =====================================
       // เก็บข้อมูล User
-      localStorage.setItem("user", JSON.stringify(user));
+      // =====================================
+      localStorage.setItem(
+        "user",
+        JSON.stringify(user)
+      );
 
-      console.log("=================================");
+      // =====================================
+      // เก็บ Username
+      // =====================================
+      localStorage.setItem(
+        "username",
+        user.username
+      );
+
+      console.log("===============================");
       console.log("Login สำเร็จ");
       console.log("Token:", token);
       console.log("User:", user);
-      console.log("=================================");
+      console.log("===============================");
 
       // =====================================
-      // 12. บันทึก Action Login
+      // สำคัญมาก
+      // แจ้ง Navigation ว่า Login สำเร็จ
+      // =====================================
+      window.dispatchEvent(
+        new Event("loginSuccess")
+      );
+
+      // =====================================
+      // 10. บันทึก Action Login
       // =====================================
       try {
-        const loginRecord = await fetch(LOGIN_URL, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            username: form.txt_username,
-            password: form.txt_password,
-            action: "login",
-          }),
-        });
+        const loginRecord = await fetch(
+          LOGIN_URL,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              username: form.txt_username,
+              password: form.txt_password,
+              action: "login",
+            }),
+          }
+        );
 
         console.log(
           "Login Action Status:",
           loginRecord.status
         );
-
-        if (loginRecord.status === 201) {
-          console.log("บันทึก Action Login สำเร็จ");
-        } else {
-          console.log(
-            "บันทึก Action Login ไม่สำเร็จ:",
-            loginRecord.status
-          );
-        }
       } catch (error) {
-        // ไม่ให้การบันทึก Action ขัดขวางการ Login
         console.log(
           "ไม่สามารถบันทึก Action Login ได้:",
           error
@@ -230,7 +237,7 @@ export default function LoginPage() {
       }
 
       // =====================================
-      // 13. แจ้ง Login สำเร็จ
+      // 11. แจ้ง Login สำเร็จ
       // =====================================
       await Swal.fire({
         icon: "success",
@@ -243,15 +250,10 @@ export default function LoginPage() {
       });
 
       // =====================================
-      // 14. ไปหน้า Users
+      // 12. ไปหน้า Users
       // =====================================
-      console.log("กำลังไปหน้า /users");
-
       router.push("/users");
     } catch (error) {
-      // =====================================
-      // Network Error
-      // =====================================
       console.error("Login Error:", error);
 
       await Swal.fire({
@@ -270,7 +272,8 @@ export default function LoginPage() {
   // =====================================
   return (
     <main className="relative min-h-screen overflow-hidden bg-gradient-to-br from-green-900 via-emerald-800 to-yellow-700">
-      {/* BACKGROUND OVERLAY */}
+
+      {/* BACKGROUND */}
       <div className="absolute inset-0 bg-black/40" />
 
       {/* DRAGON ซ้ายบน */}
@@ -293,14 +296,14 @@ export default function LoginPage() {
         />
       </div>
 
-      {/* LOGIN CONTENT */}
+      {/* LOGIN */}
       <div className="relative z-10 flex min-h-screen items-center justify-center px-6 py-12">
+
         <div className="grid w-full max-w-5xl overflow-hidden rounded-3xl border border-green-400/40 bg-green-950/80 shadow-2xl backdrop-blur-md lg:grid-cols-2">
 
-          {/* =====================================
-              LEFT : PANDA
-          ===================================== */}
+          {/* LEFT */}
           <div className="relative hidden min-h-[600px] items-center justify-center overflow-hidden bg-green-900/50 lg:flex">
+
             <div className="absolute h-80 w-80 rounded-full bg-yellow-400/10 blur-3xl" />
 
             <div className="relative z-10">
@@ -313,16 +316,17 @@ export default function LoginPage() {
                 className="object-contain drop-shadow-2xl"
               />
             </div>
+
           </div>
 
-          {/* =====================================
-              RIGHT : LOGIN
-          ===================================== */}
+          {/* RIGHT */}
           <div className="flex items-center justify-center p-8 sm:p-12">
+
             <div className="w-full max-w-md">
 
               {/* HEADER */}
               <div className="mb-8 text-center lg:text-left">
+
                 <div className="mb-4 text-5xl lg:hidden">
                   🐼
                 </div>
@@ -334,6 +338,7 @@ export default function LoginPage() {
                 <p className="mt-3 text-green-200">
                   ยินดีต้อนรับกลับสู่อาณาจักร Panda Shop
                 </p>
+
               </div>
 
               {/* FORM */}
@@ -344,6 +349,7 @@ export default function LoginPage() {
 
                 {/* USERNAME */}
                 <div>
+
                   <label className="mb-2 block font-medium text-green-100">
                     Username
                   </label>
@@ -356,12 +362,31 @@ export default function LoginPage() {
                     autoComplete="username"
                     placeholder="กรอก Username"
                     disabled={isLoading}
-                    className="w-full rounded-xl border border-green-400/30 bg-green-900/60 px-4 py-3 text-white outline-none transition placeholder:text-green-300/50 focus:border-yellow-300 focus:ring-2 focus:ring-yellow-300/20 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="
+                      w-full
+                      rounded-xl
+                      border
+                      border-green-400/30
+                      bg-green-900/60
+                      px-4
+                      py-3
+                      text-white
+                      outline-none
+                      transition
+                      placeholder:text-green-300/50
+                      focus:border-yellow-300
+                      focus:ring-2
+                      focus:ring-yellow-300/20
+                      disabled:cursor-not-allowed
+                      disabled:opacity-50
+                    "
                   />
+
                 </div>
 
                 {/* PASSWORD */}
                 <div>
+
                   <label className="mb-2 block font-medium text-green-100">
                     Password
                   </label>
@@ -374,46 +399,99 @@ export default function LoginPage() {
                     autoComplete="current-password"
                     placeholder="กรอกรหัสผ่าน"
                     disabled={isLoading}
-                    className="w-full rounded-xl border border-green-400/30 bg-green-900/60 px-4 py-3 text-white outline-none transition placeholder:text-green-300/50 focus:border-yellow-300 focus:ring-2 focus:ring-yellow-300/20 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="
+                      w-full
+                      rounded-xl
+                      border
+                      border-green-400/30
+                      bg-green-900/60
+                      px-4
+                      py-3
+                      text-white
+                      outline-none
+                      transition
+                      placeholder:text-green-300/50
+                      focus:border-yellow-300
+                      focus:ring-2
+                      focus:ring-yellow-300/20
+                      disabled:cursor-not-allowed
+                      disabled:opacity-50
+                    "
                   />
+
                 </div>
 
                 {/* LOGIN BUTTON */}
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full rounded-xl bg-green-500 px-5 py-3.5 font-bold text-white shadow-lg transition-all duration-300 hover:-translate-y-1 hover:bg-green-400 hover:shadow-green-500/30 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="
+                    w-full
+                    rounded-xl
+                    bg-green-500
+                    px-5
+                    py-3.5
+                    font-bold
+                    text-white
+                    shadow-lg
+                    transition-all
+                    duration-300
+                    hover:-translate-y-1
+                    hover:bg-green-400
+                    hover:shadow-green-500/30
+                    disabled:cursor-not-allowed
+                    disabled:opacity-50
+                  "
                 >
                   {isLoading
                     ? "กำลังเข้าสู่ระบบ..."
                     : "เข้าสู่ระบบ 🐉"}
                 </button>
+
               </form>
 
               {/* REGISTER */}
               <div className="mt-8 text-center">
+
                 <p className="text-green-200">
                   ยังไม่มีบัญชี?
                 </p>
 
                 <button
                   type="button"
-                  onClick={() => router.push("/register")}
-                  className="mt-2 font-bold text-yellow-300 transition hover:text-yellow-200 hover:underline"
+                  onClick={() =>
+                    router.push("/register")
+                  }
+                  className="
+                    mt-2
+                    font-bold
+                    text-yellow-300
+                    transition
+                    hover:text-yellow-200
+                    hover:underline
+                  "
                 >
                   สมัครสมาชิก
                 </button>
+
               </div>
 
-              {/* BACK HOME */}
+              {/* HOME */}
               <div className="mt-6 text-center">
+
                 <button
                   type="button"
                   onClick={() => router.push("/")}
-                  className="text-sm text-green-300 transition hover:text-white"
+                  className="
+                    text-sm
+                    text-green-300
+                    transition
+                    hover:text-white
+                  "
                 >
                   ← กลับหน้าหลัก
                 </button>
+
               </div>
 
             </div>
