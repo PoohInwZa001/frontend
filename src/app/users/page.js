@@ -13,96 +13,73 @@ export default function UsersPage() {
   // =====================================
   // STATE
   // =====================================
+
   const [users, setUsers] = useState([]);
+
   const [deletingId, setDeletingId] = useState(null);
 
+  // กำหนดค่า state ไว้เช็ค login
   const [isAuth, setIsAuth] = useState(false);
+
   const [isLoading, setIsLoading] = useState(true);
+
   const [isError, setIsError] = useState(false);
 
   // =====================================
-  // CHECK TOKEN
+  // CHECK LOGIN / TOKEN
   // =====================================
+
   useEffect(() => {
-    const checkAuth = () => {
-      const token = localStorage.getItem("token");
+    const token = localStorage.getItem("token");
 
-      console.log("=================================");
-      console.log("ตรวจสอบ Token หน้า Users");
-      console.log("Token:", token);
-      console.log("=================================");
+    console.log("Token:", token);
 
-      // ไม่มี Token
-      if (!token) {
-        console.log("ไม่พบ Token → กลับหน้า Login");
+    // ไม่มี Token
+    if (!token) {
+      router.push("/login");
+      return;
+    }
 
-        router.replace("/login");
-        return;
-      }
+    // มี Token
+    setIsAuth(true);
 
-      // มี Token
-      console.log("พบ Token → อนุญาตให้เข้า Users");
-
-      setIsAuth(true);
-
-      fetchUsers();
-    };
-
-    checkAuth();
-  }, [router]);
+    // โหลดข้อมูล Users
+    fetchUsers();
+  }, []);
 
   // =====================================
-  // FETCH USERS
+  // GET USERS
   // =====================================
+
   const fetchUsers = async () => {
     setIsLoading(true);
     setIsError(false);
 
     try {
-      console.log("กำลังโหลดข้อมูลสมาชิก...");
-
       const response = await fetch(API_URL, {
         method: "GET",
         cache: "no-store",
       });
 
-      console.log("GET Users Status:", response.status);
+      console.log(
+        "GET Users Status:",
+        response.status
+      );
 
-      // =====================================
-      // SERVER ERROR
-      // =====================================
-      if (response.status >= 500) {
-        throw new Error(
-          `Server Error: ${response.status}`
-        );
-      }
-
-      // =====================================
-      // ERROR อื่น ๆ
-      // =====================================
       if (!response.ok) {
         throw new Error(
           `Status ${response.status}`
         );
       }
 
-      // =====================================
-      // อ่านข้อมูล
-      // =====================================
       const data = await response.json();
 
-      console.log("ข้อมูลทั้งหมดจาก API:", data);
+      console.log("ข้อมูลทั้งหมด:", data);
 
-      // =====================================
-      // เอาเฉพาะสมาชิกที่ไม่ใช่ Action Login
-      // =====================================
+      // เอาเฉพาะข้อมูล Register
+      // ไม่เอาข้อมูล Action Login
       const registerUsers = data.filter(
         (item) => item.action !== "login"
-      );
-
-      console.log(
-        "ข้อมูลสมาชิก:",
-        registerUsers
       );
 
       setUsers(registerUsers);
@@ -128,17 +105,15 @@ export default function UsersPage() {
   // =====================================
   // DELETE USER
   // =====================================
+
   const handleDelete = async (id) => {
-    // หาข้อมูลสมาชิก
     const user = users.find(
       (u) => u.id === id
     );
 
-    // =====================================
-    // ยืนยันการลบ
-    // =====================================
     const result = await Swal.fire({
       icon: "warning",
+
       title: "ยืนยันการลบข้อมูล",
 
       html: user
@@ -148,9 +123,11 @@ export default function UsersPage() {
       showCancelButton: true,
 
       confirmButtonText: "ลบเลย",
+
       cancelButtonText: "ยกเลิก",
 
       confirmButtonColor: "#dc2626",
+
       cancelButtonColor: "#6b7280",
 
       reverseButtons: true,
@@ -160,16 +137,8 @@ export default function UsersPage() {
       return;
     }
 
-    // =====================================
-    // DELETE
-    // =====================================
     try {
       setDeletingId(id);
-
-      console.log(
-        "กำลังลบ User ID:",
-        id
-      );
 
       const response = await fetch(
         `${API_URL}/${id}`,
@@ -195,9 +164,7 @@ export default function UsersPage() {
         );
       }
 
-      // =====================================
-      // ลบออกจากหน้าจอ
-      // =====================================
+      // เอาข้อมูลออกจากหน้าจอ
       setUsers((prev) =>
         prev.filter(
           (u) => u.id !== id
@@ -230,13 +197,19 @@ export default function UsersPage() {
   // =====================================
   // LOGOUT
   // =====================================
+
   const handleLogout = async () => {
     const result = await Swal.fire({
       icon: "question",
+
       title: "ต้องการออกจากระบบ?",
+
       showCancelButton: true,
+
       confirmButtonText: "ออกจากระบบ",
+
       cancelButtonText: "ยกเลิก",
+
       confirmButtonColor: "#dc2626",
     });
 
@@ -250,27 +223,20 @@ export default function UsersPage() {
     // ลบข้อมูล User
     localStorage.removeItem("user");
 
-    console.log(
-      "Logout สำเร็จ - ลบ Token แล้ว"
-    );
-
-    router.replace("/login");
+    // กลับหน้า Login
+    router.push("/login");
   };
 
   // =====================================
-  // ยังไม่ได้ตรวจ Token
+  // CHECK AUTH
   // =====================================
-  if (!isAuth) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <p>กำลังตรวจสอบการเข้าสู่ระบบ...</p>
-      </div>
-    );
-  }
+
+  if (!isAuth) return null;
 
   // =====================================
-  // กำลังโหลด
+  // LOADING
   // =====================================
+
   if (isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -280,11 +246,13 @@ export default function UsersPage() {
   }
 
   // =====================================
-  // โหลดข้อมูลไม่สำเร็จ
+  // ERROR
   // =====================================
+
   if (isError) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center gap-4">
+
         <p className="text-red-500">
           เกิดข้อผิดพลาดในการโหลดข้อมูล
         </p>
@@ -295,6 +263,7 @@ export default function UsersPage() {
         >
           ลองใหม่
         </button>
+
       </div>
     );
   }
@@ -302,13 +271,18 @@ export default function UsersPage() {
   // =====================================
   // UI
   // =====================================
+
   return (
     <div className="min-h-screen bg-gray-50 p-6">
 
-      {/* HEADER */}
+      {/* =====================================
+          HEADER
+      ===================================== */}
+
       <div className="mb-6 flex items-center justify-between">
 
         <div>
+
           <h1 className="text-2xl font-bold">
             รายชื่อสมาชิก
           </h1>
@@ -316,9 +290,11 @@ export default function UsersPage() {
           <p className="mt-1 text-sm text-gray-500">
             จัดการข้อมูลสมาชิก
           </p>
+
         </div>
 
         {/* LOGOUT */}
+
         <button
           onClick={handleLogout}
           className="rounded-lg bg-red-500 px-4 py-2 font-medium text-white transition hover:bg-red-600"
@@ -329,24 +305,32 @@ export default function UsersPage() {
       </div>
 
       {/* =====================================
-          ไม่มีสมาชิก
+          NO USERS
       ===================================== */}
+
       {users.length === 0 ? (
+
         <div className="rounded-xl bg-white p-8 text-center shadow">
+
           <p className="text-gray-500">
             ยังไม่มีข้อมูลสมาชิกในระบบ
           </p>
+
         </div>
+
       ) : (
+
         <>
           {/* =====================================
               DESKTOP TABLE
           ===================================== */}
+
           <div className="hidden overflow-x-auto rounded-xl bg-white shadow md:block">
 
             <table className="w-full border-collapse">
 
               <thead>
+
                 <tr className="bg-green-900 text-left text-white">
 
                   <th className="border p-3">
@@ -370,11 +354,14 @@ export default function UsersPage() {
                   </th>
 
                 </tr>
+
               </thead>
 
               <tbody>
+
                 {users.map(
                   (user, index) => (
+
                     <tr
                       key={user.id}
                       className="border-b hover:bg-gray-50"
@@ -398,7 +385,8 @@ export default function UsersPage() {
 
                       <td className="space-x-2 border p-3 text-center">
 
-                        {/* EDIT */}
+                        {/* แก้ไข */}
+
                         <button
                           onClick={() =>
                             router.push(
@@ -410,7 +398,8 @@ export default function UsersPage() {
                           แก้ไข
                         </button>
 
-                        {/* DELETE */}
+                        {/* ลบ */}
+
                         <button
                           onClick={() =>
                             handleDelete(
@@ -432,26 +421,32 @@ export default function UsersPage() {
                       </td>
 
                     </tr>
+
                   )
                 )}
+
               </tbody>
 
             </table>
+
           </div>
 
           {/* =====================================
               MOBILE CARD
           ===================================== */}
+
           <div className="space-y-4 md:hidden">
 
             {users.map(
               (user, index) => (
+
                 <div
                   key={user.id}
                   className="rounded-xl bg-white p-5 shadow"
                 >
 
                   <div className="mb-3">
+
                     <p className="text-sm text-gray-400">
                       สมาชิก #{index + 1}
                     </p>
@@ -460,18 +455,18 @@ export default function UsersPage() {
                       {user.firstname}{" "}
                       {user.lastname}
                     </h2>
-                  </div>
-
-                  <div className="space-y-1 text-sm">
-
-                    <p>
-                      <span className="font-medium">
-                        Username:
-                      </span>{" "}
-                      {user.username}
-                    </p>
 
                   </div>
+
+                  <p className="text-sm">
+
+                    <span className="font-medium">
+                      Username:
+                    </span>{" "}
+
+                    {user.username}
+
+                  </p>
 
                   <div className="mt-4 flex gap-2">
 
@@ -507,6 +502,7 @@ export default function UsersPage() {
                   </div>
 
                 </div>
+
               )
             )}
 
